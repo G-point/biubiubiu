@@ -23,7 +23,7 @@ bool HelloWorld::init()
 {
     //////////////////////////////
     // 1. super init first
-    if ( !Scene::init() )
+    if ( !Scene::initWithPhysics() )
     {
         return false;
     }
@@ -81,6 +81,16 @@ bool HelloWorld::init()
     }
 
     // add "HelloWorld" splash screen"
+    
+    auto edgeSp = Sprite::create();
+    auto boundBody = PhysicsBody::createEdgeBox(visibleSize,PhysicsMaterial(0.0f,1.0f,0.0f),3);
+    edgeSp->setPosition(visibleSize.width/2, visibleSize.height/2);
+    edgeSp->setPhysicsBody(boundBody);
+    addChild(edgeSp);
+    
+    auto physicsBody2 = PhysicsBody::createCircle(10.0f,
+                                         PhysicsMaterial(0.1f, 1.0f, 0.0f));
+    physicsBody2->setGravityEnable(false);
     auto sprite = Sprite::create("ball1.png");
     if (sprite == nullptr)
     {
@@ -90,10 +100,27 @@ bool HelloWorld::init()
     {
         // position the sprite on the center of the screen
         sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.width/20 + origin.y));
-        auto moveBy = MoveBy::create(10, Vec2(200,100));
-        sprite->runAction(moveBy);
+        physicsBody2->setVelocity(Vec2(200,
+                                      200));
+        sprite->addComponent(physicsBody2);
         // add the sprite as a child to this layer
         this->addChild(sprite, 0);
+    }
+    auto physicsBody = PhysicsBody::createBox(Size(35.0f, 35.0f),
+                                              PhysicsMaterial(0.1f, 1.0f, 0.0f));
+    physicsBody->setDynamic(false);
+    auto spriteSquare = Sprite::create("square.png");
+    if (spriteSquare == nullptr)
+    {
+        problemLoading("'square.png'");
+    }
+    else
+    {
+        // position the sprite on the center of the screen
+        spriteSquare->setPosition(Vec2(300, 100));
+        spriteSquare->addComponent(physicsBody);
+        // add the sprite as a child to this layer
+        this->addChild(spriteSquare, 0);
     }
     return true;
 }
