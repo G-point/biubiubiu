@@ -18,6 +18,7 @@ public:
 private:
     cocos2d::Sprite* sprite;
     cocos2d::Point startPoint;
+    cocos2d::PhysicsBody* physicsBodyBall;
 };
 
 #endif // __HELLOWORLD_SCENE_H__

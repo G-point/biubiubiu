@@ -23,7 +23,7 @@ bool HelloWorld::init()
 {
     //////////////////////////////
     // 1. super init first
-    if ( !Scene::init() )
+    if ( !Scene::initWithPhysics() )
     {
         return false;
     }
@@ -80,6 +80,34 @@ bool HelloWorld::init()
     }
 
     // add "HelloWorld" splash screen"
+
+    auto edgeSp = Sprite::create();
+    auto boundBody = PhysicsBody::createEdgeBox(visibleSize,PhysicsMaterial(0.0f,1.0f,0.0f),3);
+    edgeSp->setPosition(visibleSize.width/2, visibleSize.height/2);
+    edgeSp->setPhysicsBody(boundBody);
+    addChild(edgeSp);
+    
+    auto physicsBody = PhysicsBody::createBox(Size(35.0f, 35.0f),
+                                              PhysicsMaterial(0.1f, 1.0f, 0.0f));
+    physicsBody->setDynamic(false);
+    auto spriteSquare = Sprite::create("square.png");
+    if (spriteSquare == nullptr)
+    {
+        problemLoading("'square.png'");
+    }
+    else
+    {
+        // position the sprite on the center of the screen
+        spriteSquare->setPosition(Vec2(300, 100));
+        spriteSquare->addComponent(physicsBody);
+        // add the sprite as a child to this layer
+        this->addChild(spriteSquare, 0);
+    }
+    
+    physicsBodyBall = PhysicsBody::createCircle(10.0f,
+                                         PhysicsMaterial(0.1f, 1.0f, 0.0f));
+    physicsBodyBall->setGravityEnable(false);
+    
     sprite = Sprite::create("ball1.png");
     if (sprite == nullptr)
     {
@@ -104,8 +132,8 @@ bool HelloWorld::init()
             startPoint = locationInNode;
             log("sprite began... x = %f, y = %f", locationInNode.x, locationInNode.y);
             target->setPosition(Vec2(locationInNode.x, locationInNode.y));
-            Vec2(locationInNode.x, locationInNode.y);
             target->setOpacity(180);
+            physicsBodyBall->setVelocity(Vec2(0, 0));
             return true;
         };
         
@@ -115,29 +143,35 @@ bool HelloWorld::init()
             
             // 获取当前点击点所在相对按钮的位置坐标
             Point locationInNode = touch->getLocation();
-            
-            target->setPosition(Vec2(locationInNode.x, locationInNode.y));
             auto y_offset = locationInNode.y - startPoint.y;
             auto x_offset = locationInNode.x - startPoint.x;
             auto angle = abs(x_offset) > 0.0001 ? atan(abs(y_offset/x_offset)) * 180 / 3.14159265359 : 0;
             log("sprite move... angle = %f", angle);
-            sprite->setScale(1, 1+y_offset/20.0f);
-            sprite->setRotation(abs(x_offset) > 0.0001 ? atan(y_offset/x_offset) : 0);
+            //sprite->setScale(1, 1+y_offset/20.0f);
+            //sprite->setRotation(abs(x_offset) > 0.0001 ? atan(y_offset/x_offset) : 0);
             target->setOpacity(180);
             return true;
         };
         
         listener1->onTouchEnded = [this](Touch* touch, Event* event){
-            sprite->setScale(1, 1);
+            auto target = static_cast<Sprite*>(event->getCurrentTarget());
+            Point locationInNode = touch->getLocation();
+            auto y_offset = locationInNode.y - startPoint.y;
+            auto x_offset = locationInNode.x - startPoint.x;
+            target->setOpacity(180);
+            auto angle = abs(x_offset) > 0.0001 ? atan(y_offset/x_offset) : 0;
+            physicsBodyBall->setVelocity(Vec2(300*cos(angle), 300*sin(angle)));
             return true;
         };
         
         // 添加监听器
         _eventDispatcher->addEventListenerWithSceneGraphPriority(listener1, sprite);
         
+        sprite->addComponent(physicsBodyBall);
         // add the sprite as a child to this layer
         this->addChild(sprite, 0);
     }
+    
     return true;
 }
 
