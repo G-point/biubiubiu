@@ -75,13 +75,12 @@ bool HelloWorld::init()
         // position the label on the center of the screen
         label->setPosition(Vec2(origin.x + visibleSize.width/2,
                                 origin.y + visibleSize.height - label->getContentSize().height));
-        cout << origin.y << endl;
         // add the label as a child to this layer
         this->addChild(label, 1);
     }
 
     // add "HelloWorld" splash screen"
-    auto sprite = Sprite::create("ball1.png");
+    sprite = Sprite::create("ball1.png");
     if (sprite == nullptr)
     {
         problemLoading("'ball1.png'");
@@ -90,7 +89,52 @@ bool HelloWorld::init()
     {
         // position the sprite on the center of the screen
         sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-
+        
+        // 创建一个事件监听器类型为 OneByOne 的单点触摸
+        auto listener1 = EventListenerTouchOneByOne::create();
+        // 设置是否吞没事件，在 onTouchBegan 方法返回 true 时吞没
+        listener1->setSwallowTouches(true);
+        
+        // 使用 lambda 实现 onTouchBegan 事件回调函数
+        listener1->onTouchBegan = [this](Touch* touch, Event* event){
+            // 获取事件所绑定的 target
+            auto target = static_cast<Sprite*>(event->getCurrentTarget());
+            
+            Point locationInNode = touch->getLocation();
+            startPoint = locationInNode;
+            log("sprite began... x = %f, y = %f", locationInNode.x, locationInNode.y);
+            target->setPosition(Vec2(locationInNode.x, locationInNode.y));
+            Vec2(locationInNode.x, locationInNode.y);
+            target->setOpacity(180);
+            return true;
+        };
+        
+        listener1->onTouchMoved = [this](Touch* touch, Event* event){
+            // 获取事件所绑定的 target
+            auto target = static_cast<Sprite*>(event->getCurrentTarget());
+            
+            // 获取当前点击点所在相对按钮的位置坐标
+            Point locationInNode = touch->getLocation();
+            
+            target->setPosition(Vec2(locationInNode.x, locationInNode.y));
+            auto y_offset = locationInNode.y - startPoint.y;
+            auto x_offset = locationInNode.x - startPoint.x;
+            auto angle = abs(x_offset) > 0.0001 ? atan(abs(y_offset/x_offset)) * 180 / 3.14159265359 : 0;
+            log("sprite move... angle = %f", angle);
+            sprite->setScale(1, 1+y_offset/20.0f);
+            sprite->setRotation(abs(x_offset) > 0.0001 ? atan(y_offset/x_offset) : 0);
+            target->setOpacity(180);
+            return true;
+        };
+        
+        listener1->onTouchEnded = [this](Touch* touch, Event* event){
+            sprite->setScale(1, 1);
+            return true;
+        };
+        
+        // 添加监听器
+        _eventDispatcher->addEventListenerWithSceneGraphPriority(listener1, sprite);
+        
         // add the sprite as a child to this layer
         this->addChild(sprite, 0);
     }
@@ -113,3 +157,4 @@ void HelloWorld::menuCloseCallback(Ref* pSender)
 
 
 }
+
