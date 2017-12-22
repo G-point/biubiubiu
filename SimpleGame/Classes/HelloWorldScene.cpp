@@ -104,6 +104,7 @@ bool HelloWorld::init()
         this->addChild(spriteSquare, 0);
     }
     
+    for (int i = 0; i < 5; ++i){
     physicsBodyBall = PhysicsBody::createCircle(10.0f,
                                          PhysicsMaterial(0.1f, 1.0f, 0.0f));
     physicsBodyBall->setGravityEnable(false);
@@ -171,7 +172,7 @@ bool HelloWorld::init()
         // add the sprite as a child to this layer
         this->addChild(sprite, 0);
     }
-    
+    }
     return true;
 }
 
