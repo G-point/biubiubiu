@@ -10,6 +10,16 @@ public:
 
     virtual bool init();
     
+    void initBalls();
+    
+    void initSquares();
+    
+    void initEdge();
+    
+    void initListeners();
+    
+    void initCloseMenu();
+    
     // a selector callback
     void menuCloseCallback(cocos2d::Ref* pSender);
     
