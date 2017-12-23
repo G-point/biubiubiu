@@ -27,9 +27,10 @@ bool HelloWorld::init()
     }
     initCloseMenu();
     initBalls();
-    initListeners();
+    initTouchListener();
     initSquares();
     initEdge();
+    initCollisionListener();
     
     return true;
 }
@@ -42,11 +43,16 @@ void HelloWorld::initBalls()
     sprite = Sprite::create("ball1.png");
     if (sprite != nullptr)
     {
+        sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
+        sprite->setTag(0x01);
         physicsBodyBall = PhysicsBody::createCircle(10.0f,
                                                     PhysicsMaterial(0.1f, 1.0f, 0.0f));
         physicsBodyBall->setGravityEnable(false);
+        physicsBodyBall->setCategoryBitmask(0x01);
+        physicsBodyBall->setCollisionBitmask(0x02);
+        physicsBodyBall->setContactTestBitmask(0x02);
         // position the sprite on the center of the screen
-        sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
+        
         sprite->addComponent(physicsBodyBall);
         // add the sprite as a child to this layer
         this->addChild(sprite, 0);
@@ -64,16 +70,41 @@ void HelloWorld::initSquares()
     {
         // position the sprite on the center of the screen
         spriteSquare->setPosition(Vec2(300, 100));
-        auto physicsBody = PhysicsBody::createBox(Size(35.0f, 35.0f),
+        spriteSquare->setTag(0x02);
+        auto physicsBodySquare = PhysicsBody::createBox(Size(35.0f, 35.0f),
                                                   PhysicsMaterial(0.1f, 1.0f, 0.0f));
-        physicsBody->setDynamic(false);
-        spriteSquare->addComponent(physicsBody);
+        physicsBodySquare->setDynamic(false);
+        physicsBodySquare->setCategoryBitmask(0x02);
+        physicsBodySquare->setCollisionBitmask(0x01);
+        physicsBodySquare->setContactTestBitmask(0x01);
+        spriteSquare->addComponent(physicsBodySquare);
         // add the sprite as a child to this layer
         this->addChild(spriteSquare, 0);
     }
     else
     {
         problemLoading("'square.png'");
+    }
+    
+    spriteSquare = Sprite::create("square2.png");
+    if (spriteSquare != nullptr)
+    {
+        // position the sprite on the center of the screen
+        spriteSquare->setPosition(Vec2(100, 100));
+        spriteSquare->setTag(0x03);
+        auto physicsBodySquare = PhysicsBody::createBox(Size(35.0f, 35.0f),
+                                                        PhysicsMaterial(0.1f, 1.0f, 0.0f));
+        physicsBodySquare->setDynamic(false);
+        physicsBodySquare->setCategoryBitmask(0x02);
+        physicsBodySquare->setCollisionBitmask(0x01);
+        physicsBodySquare->setContactTestBitmask(0x01);
+        spriteSquare->addComponent(physicsBodySquare);
+        // add the sprite as a child to this layer
+        this->addChild(spriteSquare, 0);
+    }
+    else
+    {
+        problemLoading("'square2.png'");
     }
 }
 
@@ -89,7 +120,7 @@ void HelloWorld::initEdge()
     addChild(edgeSp);
 }
 
-void HelloWorld::initListeners()
+void HelloWorld::initTouchListener()
 {
     // 创建一个事件监听器类型为 OneByOne 的单点触摸
     auto listener1 = EventListenerTouchOneByOne::create();
@@ -139,6 +170,69 @@ void HelloWorld::initListeners()
     
     // 添加监听器
     _eventDispatcher->addEventListenerWithSceneGraphPriority(listener1, sprite);
+}
+
+void HelloWorld::initCollisionListener()
+{
+    //add contact event listener
+    auto contactListener = EventListenerPhysicsContact::create();
+    contactListener->onContactBegin = CC_CALLBACK_1(HelloWorld::onContactBegin, this);
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(contactListener, this);
+}
+
+bool HelloWorld::onContactBegin(PhysicsContact& contact)
+{
+    static int count = 2;
+    static int count2 = 1;
+    
+    auto nodeA = (cocos2d::Sprite*) contact.getShapeA()->getBody()->getNode();
+    auto nodeB = (cocos2d::Sprite*) contact.getShapeB()->getBody()->getNode();
+    
+    if (nodeA && nodeB)
+    {
+        if(nodeA->getTag() == 0x03 || nodeB->getTag() == 0x03)
+        {
+            --count;
+            if(count <= 0)
+            {
+                if (nodeA->getTag() == 0x03)
+                {
+                    nodeA->removeFromParentAndCleanup(true);
+                }
+                else if (nodeB->getTag() == 0x03)
+                {
+                    nodeB->removeFromParentAndCleanup(true);
+                }
+            }
+            if(count == 1)
+            {
+                if (nodeA->getTag() == 0x03)
+                {
+                    nodeA->setTexture("square.png");
+                }
+                else if (nodeB->getTag() == 0x03)
+                {
+                    nodeB->setTexture("square.png");
+                }
+            }
+        } else
+        if(nodeA->getTag() == 0x02 || nodeB->getTag() == 0x02)
+        {
+            if(--count2 <= 0)
+            {
+                if (nodeA->getTag() == 0x02)
+                {
+                    nodeA->removeFromParentAndCleanup(true);
+                }
+                else if (nodeB->getTag() == 0x02)
+                {
+                    nodeB->removeFromParentAndCleanup(true);
+                }
+            }
+        }
+    }
+    
+    return true;
 }
 
 void HelloWorld::initCloseMenu()

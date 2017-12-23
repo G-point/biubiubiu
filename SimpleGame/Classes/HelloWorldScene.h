@@ -16,9 +16,13 @@ public:
     
     void initEdge();
     
-    void initListeners();
+    void initTouchListener();
+    
+    void initCollisionListener();
     
     void initCloseMenu();
+    
+    bool onContactBegin(cocos2d::PhysicsContact& contact);
     
     // a selector callback
     void menuCloseCallback(cocos2d::Ref* pSender);
