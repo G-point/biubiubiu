@@ -3,7 +3,7 @@
 
 #include "cocos2d.h"
 
-#define ballCount 5
+#define ballCount 20
 
 class HelloWorld : public cocos2d::Scene
 {
@@ -18,9 +18,13 @@ public:
     
     void initEdge();
     
-    void initListeners();
+    void initTouchListener();
+    
+    void initCollisionListener();
     
     void initCloseMenu();
+    
+    bool onContactBegin(cocos2d::PhysicsContact& contact);
     
     // a selector callback
     void menuCloseCallback(cocos2d::Ref* pSender);

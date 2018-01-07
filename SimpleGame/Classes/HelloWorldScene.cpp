@@ -28,9 +28,10 @@ bool HelloWorld::init()
     }
     initCloseMenu();
     initBalls();
-    initListeners();
+    initTouchListener();
     initSquares();
     initEdge();
+    initCollisionListener();
     
     return true;
 }
@@ -43,28 +44,28 @@ void HelloWorld::initBalls()
     {
         physicsBodyBallVector.push_back(PhysicsBody::createCircle(10.0f, PhysicsMaterial(0.1f, 1.0f, 0.0f)));
         spriteVector.push_back(Sprite::create("ball1.png"));
-    if (spriteVector[i] != nullptr)
-    {
-        physicsBodyBallVector[i]->setGravityEnable(false);
-        physicsBodyBallVector[i]->setCategoryBitmask(0x01);
-        physicsBodyBallVector[i]->setCollisionBitmask(0x02);
-        // position the sprite on the center of the screen
-        spriteVector[i]->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-        spriteVector[i]->addComponent(physicsBodyBallVector[i]);
-        // add the sprite as a child to this layer
-        this->addChild(spriteVector[i], 0);
-        if (i>0)
+        if (spriteVector[i] != nullptr)
         {
-            usleep(500*i);
-            //followVector.push_back(Follow::create(spriteVector[i-1]));
-            //followVector[i]->initWithTarget(spriteVector[i-1]);
-            spriteVector[i]->runAction(Follow::create(spriteVector[i-1]));
+            physicsBodyBallVector[i]->setGravityEnable(false);
+            physicsBodyBallVector[i]->setCategoryBitmask(0x01);
+            physicsBodyBallVector[i]->setCollisionBitmask(0x02);
+            physicsBodyBallVector[i]->setContactTestBitmask(0x02);
+            // position the sprite on the center of the screen
+            spriteVector[i]->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
+            spriteVector[i]->addComponent(physicsBodyBallVector[i]);
+            // add the sprite as a child to this layer
+            this->addChild(spriteVector[i], 0);
+            if (i>0)
+            {
+                //followVector.push_back(Follow::create(spriteVector[i-1]));
+                //followVector[i]->initWithTarget(spriteVector[i-1]);
+                //spriteVector[i]->runAction(Follow::create(spriteVector[i-1]));
+            }
         }
-    }
-    else
-    {
-        problemLoading("'ball1.png'");
-    }
+        else
+        {
+            problemLoading("'ball1.png'");
+        }
     }
 }
 
@@ -75,16 +76,41 @@ void HelloWorld::initSquares()
     {
         // position the sprite on the center of the screen
         spriteSquare->setPosition(Vec2(300, 100));
-        auto physicsBody = PhysicsBody::createBox(Size(35.0f, 35.0f),
+        spriteSquare->setTag(0x02);
+        auto physicsBodySquare = PhysicsBody::createBox(Size(35.0f, 35.0f),
                                                   PhysicsMaterial(0.1f, 1.0f, 0.0f));
-        physicsBody->setDynamic(false);
-        spriteSquare->addComponent(physicsBody);
+        physicsBodySquare->setDynamic(false);
+        physicsBodySquare->setCategoryBitmask(0x02);
+        physicsBodySquare->setCollisionBitmask(0x01);
+        physicsBodySquare->setContactTestBitmask(0x01);
+        spriteSquare->addComponent(physicsBodySquare);
         // add the sprite as a child to this layer
         this->addChild(spriteSquare, 0);
     }
     else
     {
         problemLoading("'square.png'");
+    }
+    
+    spriteSquare = Sprite::create("square2.png");
+    if (spriteSquare != nullptr)
+    {
+        // position the sprite on the center of the screen
+        spriteSquare->setPosition(Vec2(100, 100));
+        spriteSquare->setTag(0x03);
+        auto physicsBodySquare = PhysicsBody::createBox(Size(35.0f, 35.0f),
+                                                        PhysicsMaterial(0.1f, 1.0f, 0.0f));
+        physicsBodySquare->setDynamic(false);
+        physicsBodySquare->setCategoryBitmask(0x02);
+        physicsBodySquare->setCollisionBitmask(0x01);
+        physicsBodySquare->setContactTestBitmask(0x01);
+        spriteSquare->addComponent(physicsBodySquare);
+        // add the sprite as a child to this layer
+        this->addChild(spriteSquare, 0);
+    }
+    else
+    {
+        problemLoading("'square2.png'");
     }
 }
 
@@ -100,7 +126,7 @@ void HelloWorld::initEdge()
     addChild(edgeSp);
 }
 
-void HelloWorld::initListeners()
+void HelloWorld::initTouchListener()
 {
     // 创建一个事件监听器类型为 OneByOne 的单点触摸
     auto listener1 = EventListenerTouchOneByOne::create();
@@ -110,14 +136,10 @@ void HelloWorld::initListeners()
     // 使用 lambda 实现 onTouchBegan 事件回调函数
     listener1->onTouchBegan = [this](Touch* touch, Event* event){
         // 获取事件所绑定的 target
-        auto target = static_cast<Sprite*>(event->getCurrentTarget());
         
         Point locationInNode = touch->getLocation();
         startPoint = locationInNode;
         log("sprite began... x = %f, y = %f", locationInNode.x, locationInNode.y);
-        target->setPosition(Vec2(locationInNode.x, locationInNode.y));
-        target->setOpacity(180);
-        physicsBodyBallVector[0]->setVelocity(Vec2(0, 0));
         return true;
     };
     
@@ -145,11 +167,89 @@ void HelloWorld::initListeners()
         target->setOpacity(180);
         auto angle = abs(x_offset) > 0.0001 ? atan(y_offset/x_offset) : 0;
         physicsBodyBallVector[0]->setVelocity(Vec2(300*cos(angle), 300*sin(angle)));
+        for (int i=1; i<ballCount; i++)
+        {
+        auto moveFunc = CallFunc::create([this, angle,i]()
+        {
+            physicsBodyBallVector[i]->setVelocity(Vec2(300*cos(angle), 300*sin(angle)));
+        });
+        
+        auto moveBy = MoveBy::create(i*0.2, Vec2(0,0));
+        auto seq = Sequence::create(moveBy,moveFunc, NULL);
+        spriteVector[i]->runAction(seq);
+        }
+        
+        //physicsBodyBallVector[1]->setVelocity(Vec2(300*cos(angle), 300*sin(angle)));
         return true;
     };
     
     // 添加监听器
     _eventDispatcher->addEventListenerWithSceneGraphPriority(listener1, spriteVector[0]);
+}
+                                          
+                                          
+
+void HelloWorld::initCollisionListener()
+{
+    //add contact event listener
+    auto contactListener = EventListenerPhysicsContact::create();
+    contactListener->onContactBegin = CC_CALLBACK_1(HelloWorld::onContactBegin, this);
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(contactListener, this);
+}
+
+bool HelloWorld::onContactBegin(PhysicsContact& contact)
+{
+    static int count = 2;
+    static int count2 = 1;
+    
+    auto nodeA = (cocos2d::Sprite*) contact.getShapeA()->getBody()->getNode();
+    auto nodeB = (cocos2d::Sprite*) contact.getShapeB()->getBody()->getNode();
+    
+    if (nodeA && nodeB)
+    {
+        if(nodeA->getTag() == 0x03 || nodeB->getTag() == 0x03)
+        {
+            --count;
+            if(count <= 0)
+            {
+                if (nodeA->getTag() == 0x03)
+                {
+                    nodeA->removeFromParentAndCleanup(true);
+                }
+                else if (nodeB->getTag() == 0x03)
+                {
+                    nodeB->removeFromParentAndCleanup(true);
+                }
+            }
+            if(count == 1)
+            {
+                if (nodeA->getTag() == 0x03)
+                {
+                    nodeA->setTexture("square.png");
+                }
+                else if (nodeB->getTag() == 0x03)
+                {
+                    nodeB->setTexture("square.png");
+                }
+            }
+        } else
+        if(nodeA->getTag() == 0x02 || nodeB->getTag() == 0x02)
+        {
+            if(--count2 <= 0)
+            {
+                if (nodeA->getTag() == 0x02)
+                {
+                    nodeA->removeFromParentAndCleanup(true);
+                }
+                else if (nodeB->getTag() == 0x02)
+                {
+                    nodeB->removeFromParentAndCleanup(true);
+                }
+            }
+        }
+    }
+    
+    return true;
 }
 
 void HelloWorld::initCloseMenu()
