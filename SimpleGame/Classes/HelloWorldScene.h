@@ -3,6 +3,8 @@
 
 #include "cocos2d.h"
 
+#define ballCount 5
+
 class HelloWorld : public cocos2d::Scene
 {
 public:
@@ -29,6 +31,9 @@ private:
     cocos2d::Sprite* sprite;
     cocos2d::Point startPoint;
     cocos2d::PhysicsBody* physicsBodyBall;
+    std::vector<cocos2d::PhysicsBody*> physicsBodyBallVector;
+    std::vector<cocos2d::Sprite*> spriteVector;
+    std::vector<cocos2d::Follow*> followVector;
 };
 
 #endif // __HELLOWORLD_SCENE_H__

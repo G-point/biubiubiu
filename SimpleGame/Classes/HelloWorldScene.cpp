@@ -1,6 +1,7 @@
 #include "HelloWorldScene.h"
 #include "SimpleAudioEngine.h"
 #include <iostream>
+#include <unistd.h>
 
 using namespace std;
 
@@ -38,22 +39,32 @@ void HelloWorld::initBalls()
 {
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
-    
-    sprite = Sprite::create("ball1.png");
-    if (sprite != nullptr)
+    for (int i=0; i<ballCount; i++)
     {
-        physicsBodyBall = PhysicsBody::createCircle(10.0f,
-                                                    PhysicsMaterial(0.1f, 1.0f, 0.0f));
-        physicsBodyBall->setGravityEnable(false);
+        physicsBodyBallVector.push_back(PhysicsBody::createCircle(10.0f, PhysicsMaterial(0.1f, 1.0f, 0.0f)));
+        spriteVector.push_back(Sprite::create("ball1.png"));
+    if (spriteVector[i] != nullptr)
+    {
+        physicsBodyBallVector[i]->setGravityEnable(false);
+        physicsBodyBallVector[i]->setCategoryBitmask(0x01);
+        physicsBodyBallVector[i]->setCollisionBitmask(0x02);
         // position the sprite on the center of the screen
-        sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-        sprite->addComponent(physicsBodyBall);
+        spriteVector[i]->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
+        spriteVector[i]->addComponent(physicsBodyBallVector[i]);
         // add the sprite as a child to this layer
-        this->addChild(sprite, 0);
+        this->addChild(spriteVector[i], 0);
+        if (i>0)
+        {
+            usleep(500*i);
+            //followVector.push_back(Follow::create(spriteVector[i-1]));
+            //followVector[i]->initWithTarget(spriteVector[i-1]);
+            spriteVector[i]->runAction(Follow::create(spriteVector[i-1]));
+        }
     }
     else
     {
         problemLoading("'ball1.png'");
+    }
     }
 }
 
@@ -106,7 +117,7 @@ void HelloWorld::initListeners()
         log("sprite began... x = %f, y = %f", locationInNode.x, locationInNode.y);
         target->setPosition(Vec2(locationInNode.x, locationInNode.y));
         target->setOpacity(180);
-        physicsBodyBall->setVelocity(Vec2(0, 0));
+        physicsBodyBallVector[0]->setVelocity(Vec2(0, 0));
         return true;
     };
     
@@ -133,12 +144,12 @@ void HelloWorld::initListeners()
         auto x_offset = locationInNode.x - startPoint.x;
         target->setOpacity(180);
         auto angle = abs(x_offset) > 0.0001 ? atan(y_offset/x_offset) : 0;
-        physicsBodyBall->setVelocity(Vec2(300*cos(angle), 300*sin(angle)));
+        physicsBodyBallVector[0]->setVelocity(Vec2(300*cos(angle), 300*sin(angle)));
         return true;
     };
     
     // 添加监听器
-    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener1, sprite);
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener1, spriteVector[0]);
 }
 
 void HelloWorld::initCloseMenu()
